@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 )
@@ -17,6 +18,21 @@ func main() {
 		//this way to test
 		fmt.Println(resp)
 	}
+
+	//bs := []byte{} // normal way to define a bye alternatively in the next line
+	bs := make([]byte, 99999) //give me a byte slice of emply spaces of length 99999
+	//make is a built in function in golang which in above example takes in an argument of type as the first argument and the initial value as in the second argument
+	//in the above line we are making up a byte slice and defaulting it with 99999 empty spaces
+
+	resp.Body.Read(bs)
+	fmt.Println(string(bs))
+
+
+	//alternative way to write the above read in single line should do the same thin
+	//as such of printing(string(bs))
+
+	io.Copy(os.Stdout, resp.Body)
+
 }
 
 /*
@@ -75,8 +91,14 @@ func main() {
 		type Reader interface {
 			Read(p []byte) (n int, err error)
 		}
-
+			n --> no of bytes which were read into the splice
 	VIDEO 63: More on the Reader Interface
+	
+
+	VIDEO 64: Working with the Read Function
+
+	VIDEO 65: The Writer Interface
+
 
 
 */
