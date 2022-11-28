@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"time"
 )
 
 func main() {
@@ -22,7 +23,20 @@ func main() {
 		go checkLink(link, c) ///-----------> this is the only change (adding go to the ahead of the line) and passing in the channel as the second argument
 	}
 
-	fmt.Println(<-c) //printing out the messages received from the channel
+	//fmt.Println(<-c) //printing out the messages received from the
+
+	//creating the same number of receivers as the same number of the links in the slice
+
+	// for i := 0; i < len(links); i++ {
+	// 	fmt.Println(<-c) //program execution halts for the first time when it runs <-c and continues creating more only when the first receiver created encounters a response from the the first created channel.
+	// }
+
+	for l := range c {
+		go func(link string) {
+			time.Sleep(5 * time.Second) //wait for five seconds
+			checkLink(link, c)
+		}(l)
+	}
 }
 
 // adding anothe argument of channel below so that this channel be used for all the communication if a go routine is been executed
@@ -30,13 +44,14 @@ func checkLink(link string, c chan string) {
 	_, err := http.Get(link)
 	if err != nil {
 		fmt.Println(link, "might be down!")
-		c <- "Might be down!" //returning back a message back through the channel saying that the communication has been successful
+		// c <- "Might be down!" //returning back a message back through the channel saying that the communication has been successful
+		c <- link
 		return
 	}
 
-	c <- "is up!" //returning back a message back through the channel saying that the communication has been successful
-
 	fmt.Println(link, "is up!")
+	c <- link //returning back a message back through the channel saying that the communication has been successful
+
 }
 
 /*
@@ -281,9 +296,188 @@ func checkLink(link string, c chan string) {
 		back at the child go routine from the old. and the child routine goes sleep when it hits a blocking call at http.get(...)
 		and when the child go routine resolves (after receiving a response from the get call) the child awakes and when it returns i mean returns a routine c <- "..." the main wakes up and resumes the program and terminates.
 
-		
+		******TIP: Watch Video 76 from 4:30 mins ******************
+
+		A hacky solution for this is since the program is terminating upon receiving the first link response and when we have only 1 fmt.Println(<-c) link out there
+		we can add a few more (<-c) lines to tell the main routine to hang in till all the other responses are back. so say in the slice we have about
+		5 links and for which if we write 5 fmt.Println(<-c) statements then all the program would only terminate only when all the 5 links responses are been fetched
+
+		But say we have about 5 links in the slice and we write the fmt.Println(<-c) for 6 times or any number of times which is more than 5 then the main routine would never terminate and keep hanging on for the
+		6th one where we have just created 5 child go routines and resolve only 5 of them
+
+		Another solution in the next video
+
+	77. Receiving Messages
+
+		Takeaway fromt he last video: Receiving from a channel (<-c) is a blocking action.
+			simple hack is to use for loop to write the fmt.Println(<-c) for the same number of links we we got
+				for i:= 0; i<len(links); i++ {
+					fmt.Println(<-c)
+				}
+
+				//here in the for loop a point to observe is everytime the go run time sees "<-c" the program halts. and likewise the program halts when it sees
+				//<-c while running the for loop for the first time and creates another <-c only after the first channel reception is successful
+				// and only then it creates a receiver for the second one and from there on...
 
 
+			func main() {
+				links := []string{
+					"http://google.com",
+					"http://facebook.com",
+					"http://stackoverflow.com",
+					"http://golang.org",
+					"http://amazon.com",
+				}
+
+				c := make(chan string)
+				//this is how we create a new channel which takes in of type string and this channel is scopped within the main block of funcion and
+				//not available for any other blocks could be checkLink function for an instance
+
+				for _, link := range links {
+					go checkLink(link, c) ///-----------> this is the only change (adding go to the ahead of the line) and passing in the channel as the second argument
+				}
+
+				//fmt.Println(<-c) //printing out the messages received from the
+
+				//creating the same number of receivers as the same number of the links in the slice
+
+				for i := 0; i < len(links); i++ {
+					fmt.Println(<-c) //program execution halts for the first time when it runs <-c and continues creating more only when the first receiver created encounters a response from the the first created channel.
+				}
+			}
+
+			// adding anothe argument of channel below so that this channel be used for all the communication if a go routine is been executed
+			func checkLink(link string, c chan string) {
+				_, err := http.Get(link)
+				if err != nil {
+					fmt.Println(link, "might be down!")
+					c <- "Might be down!" //returning back a message back through the channel saying that the communication has been successful
+					return
+				}
+
+				c <- "is up!" //returning back a message back through the channel saying that the communication has been successful
+
+				fmt.Println(link, "is up!")
+			}
+
+
+	78. Repeating Routines
+
+		Objective: say google.com ki request aipoyindi so apudu immediately manam inkoka channel create cheyali hitting the same google.com similarly parallel ga
+		vere links ki kuda back to back hits ni ivvali one after the other.
+
+		So manam mana checkLink function lo channel return ping response message to patu link kuda return cheyali adi mana main lo unna for loop lo catch chesi inkoka channel ni initiate cheyali
+
+			func main() {
+				links := []string{
+					"http://google.com",
+					"http://facebook.com",
+					"http://stackoverflow.com",
+					"http://golang.org",
+					"http://amazon.com",
+				}
+
+				c := make(chan string)
+				//this is how we create a new channel which takes in of type string and this channel is scopped within the main block of funcion and
+				//not available for any other blocks could be checkLink function for an instance
+
+				for _, link := range links {
+					go checkLink(link, c) ///-----------> this is the only change (adding go to the ahead of the line) and passing in the channel as the second argument
+				}
+				for {   //(for {} --> is an infinite loop)
+					go checkLink(<-c, c)
+				}
+			}
+			func checkLink(link string, c chan string) {
+				_, err := http.Get(link)
+				if err != nil {
+					fmt.Println(link, "might be down!")
+					c <- link
+					return
+				}
+				c <- link
+				fmt.Println(link, "is up!")
+			}
+
+	79. Alternative Loop Syntax -- foreach
+
+			for l := range c {
+				go checkLink(l, c)
+			}
+
+			Notes from : https://stackoverflow.com/questions/7782411/is-there-a-foreach-loop-in-go
+
+			A "for" statement with a "range" clause iterates through all entries of an array, slice, string or map, or values received on a channel. For each entry it assigns iteration values to corresponding iteration variables and then executes the block.
+
+			for index, element := range someSlice {
+				// index is the index where we are
+				// element is the element from someSlice for where we are
+			}
+
+			//If you don't care about the index, you can use _:
+			//The underscore, _, is the blank identifier, an anonymous placeholder.
+			//https://go.dev/ref/spec#Blank_identifier
+			for _, element := range someSlice {
+    			// element is the element from someSlice for where we are
+			}
+
+	80. Sleeping a Routine
+		Lets put a pause after every successful fetch call been made. ante a time of pause between any two google.com calls
+			Time package in golang is a good option to use where we have sleep function out there, https://cs.opensource.google/go/go/+/refs/tags/go1.19.3:src/time/sleep.go;l=9
+
+
+			for l := range c {
+				time.Sleep(time.Second)// pauses for 1 second and to pause the code for 5 seconds time.Sleep(5 * time.Second)
+				go checkLink(l, c)
+			}
+		// but putting the sleep in the main function pauses up the entire execution for 5 seconds say your have just received a response from the channel of google.com and the main sleeps for 5 seconds and even if within this 5 seconds if stackoverflow.com finishes up its execution the main is stil asleep causing adding a pause over the blocking call which is made.
+
+
+	81. Function Literals
+
+		Function literals in go are nothing but Anonymous function in JS.
+			Brush of JS
+			//annonymous
+				const increment = function() {
+					counter+= this.val;
+				}
+			// arrow
+				const increment = () => {
+					counter+= this.val;
+				}
+
+				obj = new Obj()
+				obj.val = 2
+				obj.increment(2)
+
+		instead of
+		for l := range c {
+			go checkLink()
+		}
+
+		use
+
+		for l := range c {
+			go func() {
+				time.Sleep(5* time.Second)
+				checkLink(l, c) // comes with a warning (range variable l captured by func literal)
+			}()
+		}
+
+	82. Channels Gotchas
+
+		upon running the above code some only facebook.com is been called most of the time this is because the scoping issue
+		the l anedi main routine lo define ayi undi and danini inkoka go routine lo vadutunapudu value changes anedi avachu
+		so simple ga aa l ni argument ga function literal loki pampiste saripotundi
+
+		Always Avoid: Avoid using the variable from the parent routine inside a child go routine.
+
+		for l := range c {
+			go func(link string) {
+				time.Sleep(5* time.Second)
+				checkLink(link, c) // comes with a warning (range variable l captured by func literal)
+			}(l)
+		}
 
 
 
