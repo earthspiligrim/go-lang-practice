@@ -8,5 +8,10 @@ concepts from other languages like C, Go has unique features in terms of applica
 
 It is majorly objectified towards creating servers and backend systems, but as a general-purpose programming language, you can do anything with Go.
 
-Go is very powerful when it comes to concurrency. It is easier to create applications that effe
+Go is very powerful when it comes to concurrency. It is easier to create applications that effectively utilize modern multi-core and networked machines while keeping neat modular programming code (eg: using of the multi cores to regulate the go routines)
+
+Go is perfect for web development with its smart library, steady performance, solid security, and clean syntax.
+
+
+
 
