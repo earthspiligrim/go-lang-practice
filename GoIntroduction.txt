@@ -1,0 +1,12 @@
+
+Link: https://www.scalefocus.com/blog/why-you-should-go-with-go-for-your-next-software-project#:~:text=It%20runs%20faster%2C%20compiles%20quicker,an%20even%20better%20speed%20advantage.
+
+Why Golang?
+
+Go is relatively young open-source programming language. Google designed it to meet the needs of developers working on large-scale projects. Although it incorporates
+concepts from other languages like C, Go has unique features in terms of application development capabilities. 
+
+It is majorly objectified towards creating servers and backend systems, but as a general-purpose programming language, you can do anything with Go.
+
+Go is very powerful when it comes to concurrency. It is easier to create applications that effe
+
